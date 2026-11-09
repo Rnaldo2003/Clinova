@@ -3,34 +3,14 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
+const { requireAuth, requireRol, JWT_SECRET } = require('../middleware/auth');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cambia_esto';
-
-// Registrar un usuario del personal (la contraseña se guarda encriptada con bcrypt)
-// Body: { nombres, apellidos, email, password, rol_id, especialidad_id?, clinica_id? }
-router.post('/register', async (req, res, next) => {
-  try {
-    const b = req.body;
-    if (!b.email || !b.password) return res.status(400).json({ error: 'email y password son obligatorios' });
-
-    const hash = await bcrypt.hash(b.password, 10);
-    const [r] = await pool.query(
-      `INSERT INTO usuarios (clinica_id, sede_id, rol_id, especialidad_id, nombres, apellidos, email, password_hash, colegiatura)
-       VALUES (?,?,?,?,?,?,?,?,?)`,
-      [b.clinica_id || 1, b.sede_id || 1, b.rol_id || 3, b.especialidad_id || null,
-       b.nombres, b.apellidos, b.email, hash, b.colegiatura || null]
-    );
-    res.status(201).json({ id: r.insertId, mensaje: 'Usuario creado' });
-  } catch (e) {
-    if (e.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Ese email ya está registrado' });
-    next(e);
-  }
-});
-
-// Iniciar sesión.  Body: { email, password }  ->  devuelve un token
+// Iniciar sesión (pública).  Body: { email, password }  ->  devuelve un token
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'email y password son obligatorios' });
+
     const [rows] = await pool.query(
       `SELECT u.id, u.nombres, u.apellidos, u.email, u.password_hash, r.nombre AS rol
          FROM usuarios u JOIN roles r ON r.id = u.rol_id
@@ -53,22 +33,54 @@ router.post('/login', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-module.exports = router;
-
-// ------------------------------------------------------------
-// Middleware opcional para proteger rutas (úsalo cuando quieras):
-//   const { requireAuth } = require('./routes/auth');
-//   app.use('/api/pacientes', requireAuth, require('./routes/pacientes'));
-// ------------------------------------------------------------
-function requireAuth(req, res, next) {
-  const h = req.headers.authorization || '';
-  const token = h.startsWith('Bearer ') ? h.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Falta el token' });
+// Datos del usuario con sesión iniciada (sirve para comprobar si el token sigue vigente)
+router.get('/me', requireAuth, async (req, res, next) => {
   try {
-    req.usuario = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ error: 'Token inválido o expirado' });
+    const [rows] = await pool.query(
+      `SELECT u.id, u.nombres, u.apellidos, u.email, r.nombre AS rol, e.nombre AS especialidad
+         FROM usuarios u
+         JOIN roles r ON r.id = u.rol_id
+         LEFT JOIN especialidades e ON e.id = u.especialidad_id
+        WHERE u.id = ? AND u.activo = 1`,
+      [req.usuario.id]
+    );
+    if (!rows.length) return res.status(401).json({ error: 'Usuario no encontrado o inactivo' });
+    const u = rows[0];
+    res.json({ id: u.id, nombre: `${u.nombres} ${u.apellidos}`, email: u.email, rol: u.rol, especialidad: u.especialidad });
+  } catch (e) { next(e); }
+});
+
+// Registrar un usuario del personal. SOLO un administrador con sesión iniciada puede hacerlo.
+// (Para crear el PRIMER usuario usa:  npm run crear-usuario)
+// Body: { nombres, apellidos, email, password, rol_id, especialidad_id?, sede_id?, colegiatura? }
+router.post('/register', requireAuth, requireRol('admin', 'superadmin'), async (req, res, next) => {
+  try {
+    const b = req.body;
+    if (!b.nombres || !b.apellidos || !b.email || !b.password) {
+      return res.status(400).json({ error: 'nombres, apellidos, email y password son obligatorios' });
+    }
+    if (String(b.password).length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    }
+    const rolId = Number(b.rol_id) || 3;
+    // Solo un superadmin puede crear otro superadmin
+    if (rolId === 1 && req.usuario.rol !== 'superadmin') {
+      return res.status(403).json({ error: 'Solo un superadmin puede crear otro superadmin' });
+    }
+
+    const hash = await bcrypt.hash(b.password, 10);
+    const [r] = await pool.query(
+      `INSERT INTO usuarios (clinica_id, sede_id, rol_id, especialidad_id, nombres, apellidos, email, password_hash, colegiatura)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [b.clinica_id || 1, b.sede_id || 1, rolId, b.especialidad_id || null,
+       b.nombres, b.apellidos, b.email, hash, b.colegiatura || null]
+    );
+    res.status(201).json({ id: r.insertId, mensaje: 'Usuario creado' });
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Ese email ya está registrado' });
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') return res.status(400).json({ error: 'rol_id, especialidad_id o sede_id no existe' });
+    next(e);
   }
-}
-module.exports.requireAuth = requireAuth;
+});
+
+module.exports = router;

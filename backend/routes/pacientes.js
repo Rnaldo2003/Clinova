@@ -32,6 +32,7 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const b = req.body;
+    if (!b.nombres || !b.apellidos) return res.status(400).json({ error: 'nombres y apellidos son obligatorios' });
     const [r] = await pool.query(
       `INSERT INTO pacientes
          (clinica_id, expediente_no, identidad, nombres, apellidos, fecha_nacimiento, sexo,
@@ -51,7 +52,8 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
   try {
     const b = req.body;
-    await pool.query(
+    if (!b.nombres || !b.apellidos) return res.status(400).json({ error: 'nombres y apellidos son obligatorios' });
+    const [r] = await pool.query(
       `UPDATE pacientes SET
          nombres=?, apellidos=?, fecha_nacimiento=?, sexo=?, telefono=?, email=?,
          direccion=?, tipo_sangre=?, alergias=?, antecedentes=?,
@@ -62,6 +64,7 @@ router.put('/:id', async (req, res, next) => {
        b.antecedentes || null, b.contacto_emerg_nombre || null, b.contacto_emerg_telefono || null,
        req.params.id]
     );
+    if (!r.affectedRows) return res.status(404).json({ error: 'Paciente no encontrado' });
     res.json({ mensaje: 'Paciente actualizado' });
   } catch (e) { next(e); }
 });
@@ -69,7 +72,8 @@ router.put('/:id', async (req, res, next) => {
 // "Eliminar" (desactivar) paciente
 router.delete('/:id', async (req, res, next) => {
   try {
-    await pool.query('UPDATE pacientes SET activo = 0 WHERE id = ?', [req.params.id]);
+    const [r] = await pool.query('UPDATE pacientes SET activo = 0 WHERE id = ?', [req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Paciente no encontrado' });
     res.json({ mensaje: 'Paciente desactivado' });
   } catch (e) { next(e); }
 });
