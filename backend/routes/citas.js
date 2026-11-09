@@ -2,6 +2,9 @@
 const router = require('express').Router();
 const pool = require('../db');
 
+const ESTADOS = ['Pendiente', 'Confirmada', 'En espera', 'En consulta', 'Atendida', 'Cancelada', 'No asistio'];
+const TIPOS = ['Consulta general', 'Control', 'Seguimiento', 'Primera consulta', 'Resultado de laboratorio', 'Otro'];
+
 // Listar citas. Filtros opcionales: ?fecha=YYYY-MM-DD  ?medico_id=1  ?estado=Confirmada
 router.get('/', async (req, res, next) => {
   try {
@@ -32,6 +35,27 @@ router.get('/', async (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const b = req.body;
+    if (!b.paciente_id || !b.medico_id || !b.fecha || !b.hora_inicio) {
+      return res.status(400).json({ error: 'paciente_id, medico_id, fecha y hora_inicio son obligatorios' });
+    }
+    if (b.tipo && !TIPOS.includes(b.tipo)) {
+      return res.status(400).json({ error: 'tipo inválido', permitidos: TIPOS });
+    }
+    if (b.estado && !ESTADOS.includes(b.estado)) {
+      return res.status(400).json({ error: 'estado inválido', permitidos: ESTADOS });
+    }
+
+    // Evitar dos citas activas del mismo médico a la misma fecha y hora
+    const [choque] = await pool.query(
+      `SELECT id FROM citas
+        WHERE medico_id = ? AND fecha = ? AND hora_inicio = ?
+          AND estado NOT IN ('Cancelada','No asistio')`,
+      [b.medico_id, b.fecha, b.hora_inicio]
+    );
+    if (choque.length) {
+      return res.status(409).json({ error: 'El médico ya tiene una cita a esa hora', cita_id: choque[0].id });
+    }
+
     const [r] = await pool.query(
       `INSERT INTO citas (clinica_id, paciente_id, medico_id, servicio_id, fecha, hora_inicio, hora_fin, tipo, estado, motivo)
        VALUES (?,?,?,?,?,?,?,?,?,?)`,
@@ -39,14 +63,21 @@ router.post('/', async (req, res, next) => {
        b.hora_fin || null, b.tipo || 'Consulta general', b.estado || 'Pendiente', b.motivo || null]
     );
     res.status(201).json({ id: r.insertId, mensaje: 'Cita creada' });
-  } catch (e) { next(e); }
+  } catch (e) {
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') return res.status(400).json({ error: 'El paciente, médico o servicio no existe' });
+    next(e);
+  }
 });
 
 // Cambiar solo el estado de una cita (ej. Confirmada -> En consulta)
 router.patch('/:id/estado', async (req, res, next) => {
   try {
     const { estado } = req.body;
-    await pool.query('UPDATE citas SET estado = ? WHERE id = ?', [estado, req.params.id]);
+    if (!ESTADOS.includes(estado)) {
+      return res.status(400).json({ error: 'estado inválido', permitidos: ESTADOS });
+    }
+    const [r] = await pool.query('UPDATE citas SET estado = ? WHERE id = ?', [estado, req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Cita no encontrada' });
     res.json({ mensaje: 'Estado actualizado', estado });
   } catch (e) { next(e); }
 });
