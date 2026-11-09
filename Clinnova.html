@@ -74,6 +74,11 @@ button{font-family:inherit;cursor:pointer}
 .iconbtn .dot{position:absolute;top:-5px;right:-5px;background:var(--crit);color:#fff;font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:9px;display:grid;place-items:center;border:2px solid var(--surface)}
 .me{display:flex;align-items:center;gap:10px;padding:5px 7px 5px 5px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
 .me:hover{background:var(--surface-2)}
+.mewrap{position:relative}
+.memenu{position:absolute;top:50px;right:0;z-index:40;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;min-width:170px;display:none}
+.mewrap.open .memenu{display:block}
+.memenu button{display:block;width:100%;border:0;background:none;padding:11px 14px;font-size:13.5px;color:var(--red,#c0392b);cursor:pointer;text-align:left;font-family:inherit}
+.memenu button:hover{background:var(--surface-2)}
 .me .av{width:34px;height:34px;border-radius:9px;object-fit:cover}
 .me b{font-size:13px;display:block;line-height:1.2}
 .me span{font-size:11.5px;color:var(--ink-2)}
@@ -260,8 +265,14 @@ button{font-family:inherit;cursor:pointer}
 }
 @media (max-width:420px){.stats{grid-template-columns:1fr}}
 </style>
-</head>
-<body>
+<script>
+/* Sin sesión iniciada no se puede ver el panel: vuelve al login */
+(function(){
+  var t=null;
+  try{ t=localStorage.getItem('clinnova_token')||sessionStorage.getItem('clinnova_token'); }catch(_){}
+  if(!t) location.replace('login.html');
+})();
+</script>
 </head>
 <body>
 
@@ -363,14 +374,17 @@ button{font-family:inherit;cursor:pointer}
       <button class="iconbtn" aria-label="Notificaciones"><svg class="ic"><use href="#i-bell"/></svg><span class="dot">3</span></button>
       <button class="iconbtn" aria-label="Mensajes"><svg class="ic"><use href="#i-msg"/></svg><span class="dot">5</span></button>
       <button class="iconbtn" aria-label="Ayuda"><svg class="ic"><use href="#i-help"/></svg></button>
-      <button class="me"><span class="av" style="width:34px;height:34px;border-radius:9px">CL</span><span><b>Dr. Carlos López</b><span data-i18n="role">Medicina General</span></span><svg class="ic" style="width:16px;height:16px;color:var(--ink-3)"><use href="#i-chevd"/></svg></button>
+      <div class="mewrap" id="meWrap">
+        <button class="me" id="meBtn"><span class="av" id="meAv" style="width:34px;height:34px;border-radius:9px">CL</span><span><b id="meName">Dr. Carlos López</b><span id="meRole" data-i18n="role">Medicina General</span></span><svg class="ic" style="width:16px;height:16px;color:var(--ink-3)"><use href="#i-chevd"/></svg></button>
+        <div class="memenu"><button id="logoutBtn" data-i18n="logout">Cerrar sesión</button></div>
+      </div>
     </header>
 
     <div class="wrap">
       <section id="dash">
       <div class="head">
         <div>
-          <h1><span data-i18n="greet">Buenos días</span>, Dr. Carlos López</h1>
+          <h1><span data-i18n="greet">Buenos días</span>, <span id="greetName">Dr. Carlos López</span></h1>
           <p data-i18n="subtitle">Aquí está el resumen de su día.</p>
         </div>
         <div class="when">
@@ -466,7 +480,7 @@ let LANG=(()=>{try{const s=localStorage.getItem('clinnova_lang');return s==='en'
 const I=()=>LANG==='en'?1:0;
 
 const I18N={
-  es:{role:'Medicina General', searchPh:'Buscar paciente, cita, documento...',
+  es:{role:'Medicina General', logout:'Cerrar sesión', searchPh:'Buscar paciente, cita, documento...',
     greet:'Buenos días', subtitle:'Aquí está el resumen de su día.', date:'Martes, 30 de Septiembre 2026',
     st_patients:'Pacientes hoy', st_pending:'Pendientes', st_messages:'Mensajes', st_results:'Resultados nuevos', st_follow:'Seguimientos urgentes',
     c_agenda:'Agenda de hoy', l_fullagenda:'Ver agenda completa', c_tasks:'Tareas pendientes', l_viewall_f:'Ver todas',
@@ -477,7 +491,7 @@ const I18N={
     sec_gestion:'Gestión', nav_finanzas:'Finanzas', nav_inventario:'Inventario', nav_reportes:'Reportes', nav_config:'Configuración',
     soon_badge:'EN PREPARACIÓN', soon_text:'Estamos construyendo esta sección de Clinnova. Muy pronto estará lista con todo lo que necesitas.', soon_back:'← Volver al inicio',
     langLabel:'Español'},
-  en:{role:'General Medicine', searchPh:'Search patient, appointment, document...',
+  en:{role:'General Medicine', logout:'Log out', searchPh:'Search patient, appointment, document...',
     greet:'Good morning', subtitle:"Here's your day at a glance.", date:'Tuesday, September 30, 2026',
     st_patients:'Patients today', st_pending:'Pending', st_messages:'Messages', st_results:'New results', st_follow:'Urgent follow-ups',
     c_agenda:"Today's schedule", l_fullagenda:'View full schedule', c_tasks:'Pending tasks', l_viewall_f:'View all',
@@ -634,6 +648,37 @@ document.addEventListener('click',()=>langBox.classList.remove('open'));
 /* mobile menu */
 $('#hamb').addEventListener('click',()=>$('#app').classList.toggle('open'));
 $('#scrim').addEventListener('click',()=>$('#app').classList.remove('open'));
+
+/* ===== Sesión ===== */
+const API='http://localhost:4000/api';
+const store=(()=>{try{return localStorage.getItem('clinnova_token')?localStorage:sessionStorage;}catch(_){return null;}})();
+const TOKEN=store?store.getItem('clinnova_token'):null;
+function logout(){
+  try{['clinnova_token','clinnova_user'].forEach(k=>{localStorage.removeItem(k);sessionStorage.removeItem(k);});}catch(_){}
+  location.replace('login.html');
+}
+// Llama a la API con el token; si la sesión venció, vuelve al login
+async function api(path,opts={}){
+  const r=await fetch(API+path,{...opts,headers:{'Content-Type':'application/json',...(opts.headers||{}),Authorization:'Bearer '+TOKEN}});
+  if(r.status===401){ logout(); throw new Error('Sesión expirada'); }
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error||('Error '+r.status));
+  return data;
+}
+function showUser(u){
+  if(!u||!u.nombre) return;
+  const titulo=u.rol==='medico'?'Dr. '+u.nombre:u.nombre;
+  $('#meName').textContent=titulo; $('#greetName').textContent=titulo;
+  $('#meAv').textContent=initials(u.nombre);
+  if(u.especialidad||u.rol){ const r=$('#meRole'); r.removeAttribute('data-i18n'); r.textContent=u.especialidad||(u.rol.charAt(0).toUpperCase()+u.rol.slice(1)); }
+}
+try{ showUser(JSON.parse(store.getItem('clinnova_user')||'null')); }catch(_){}
+api('/auth/me').then(u=>{ showUser(u); try{store.setItem('clinnova_user',JSON.stringify(u));}catch(_){} }).catch(()=>{});
+
+const meWrap=$('#meWrap');
+$('#meBtn').addEventListener('click',(e)=>{ e.stopPropagation(); meWrap.classList.toggle('open'); });
+document.addEventListener('click',()=>meWrap.classList.remove('open'));
+$('#logoutBtn').addEventListener('click',logout);
 
 /* init */
 applyStatic();
