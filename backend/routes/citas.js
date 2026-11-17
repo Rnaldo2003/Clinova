@@ -1,6 +1,7 @@
 // Rutas de CITAS (agenda)  ->  /api/citas
 const router = require('express').Router();
 const pool = require('../db');
+const { notificar } = require('../services/notificar');
 
 const ESTADOS = ['Pendiente', 'Confirmada', 'En espera', 'En consulta', 'Atendida', 'Cancelada', 'No asistio'];
 const TIPOS = ['Consulta general', 'Control', 'Seguimiento', 'Primera consulta', 'Resultado de laboratorio', 'Otro'];
@@ -62,6 +63,14 @@ router.post('/', async (req, res, next) => {
       [b.clinica_id || 1, b.paciente_id, b.medico_id, b.servicio_id || null, b.fecha, b.hora_inicio,
        b.hora_fin || null, b.tipo || 'Consulta general', b.estado || 'Pendiente', b.motivo || null]
     );
+    // Aviso al médico (MongoDB)
+    const [[p]] = await pool.query('SELECT nombres, apellidos FROM pacientes WHERE id = ?', [b.paciente_id]);
+    await notificar([b.medico_id], {
+      tipo: 'Cita',
+      titulo: 'Nueva cita agendada',
+      descripcion: `${p ? p.nombres + ' ' + p.apellidos : 'Paciente'} · ${b.fecha} ${String(b.hora_inicio).slice(0, 5)}`,
+      datos: { cita_id: r.insertId },
+    });
     res.status(201).json({ id: r.insertId, mensaje: 'Cita creada' });
   } catch (e) {
     if (e.code === 'ER_NO_REFERENCED_ROW_2') return res.status(400).json({ error: 'El paciente, médico o servicio no existe' });
@@ -78,6 +87,17 @@ router.patch('/:id/estado', async (req, res, next) => {
     }
     const [r] = await pool.query('UPDATE citas SET estado = ? WHERE id = ?', [estado, req.params.id]);
     if (!r.affectedRows) return res.status(404).json({ error: 'Cita no encontrada' });
+
+    // Cuando el paciente llega (En espera), se avisa al médico
+    if (estado === 'En espera') {
+      const [[c]] = await pool.query(
+        `SELECT c.medico_id, c.hora_inicio, CONCAT(p.nombres,' ',p.apellidos) AS paciente
+           FROM citas c JOIN pacientes p ON p.id = c.paciente_id WHERE c.id = ?`, [req.params.id]);
+      if (c) await notificar([c.medico_id], {
+        tipo: 'Cita', titulo: `${c.paciente} está en sala de espera`,
+        descripcion: `Cita de las ${String(c.hora_inicio).slice(0, 5)}`, datos: { cita_id: Number(req.params.id) },
+      });
+    }
     res.json({ mensaje: 'Estado actualizado', estado });
   } catch (e) { next(e); }
 });
