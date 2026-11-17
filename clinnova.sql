@@ -271,16 +271,7 @@ CREATE TABLE documentos (
 -- ============================================================
 --  10. MENSAJERÍA Y SEGUIMIENTO
 -- ============================================================
-CREATE TABLE mensajes (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  paciente_id   INT           NOT NULL,
-  area          ENUM('Administrativa','Clinica','Laboratorio','Recepcion') NOT NULL DEFAULT 'Administrativa',
-  contenido     TEXT          NOT NULL,
-  leido         TINYINT(1)    NOT NULL DEFAULT 0,
-  estado        ENUM('Nuevo','En proceso','Resuelto') NOT NULL DEFAULT 'Nuevo',
-  creado_en     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_msg_paciente FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
-) ENGINE=InnoDB;
+-- Los MENSAJES se guardan en MongoDB (colección "mensajes"). Ver backend/models/Mensaje.js
 
 CREATE TABLE seguimientos (
   id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -341,16 +332,8 @@ CREATE TABLE movimientos_inventario (
 -- ============================================================
 --  13. NOTIFICACIONES
 -- ============================================================
-CREATE TABLE notificaciones (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  usuario_id    INT           NOT NULL,
-  tipo          ENUM('Cita','Resultado','Seguimiento','Tarea','Inventario','Documento','Mensaje') NOT NULL,
-  titulo        VARCHAR(160),
-  descripcion   VARCHAR(255),
-  leida         TINYINT(1)    NOT NULL DEFAULT 0,
-  creado_en     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_notif_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
-) ENGINE=InnoDB;
+-- Las NOTIFICACIONES se guardan en MongoDB (colección "notificaciones"). Ver backend/models/Notificacion.js
+-- La BITÁCORA de auditoría también está en MongoDB (colección "bitacora").
 
 SET FOREIGN_KEY_CHECKS = 1;
 
