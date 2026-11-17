@@ -24,6 +24,7 @@ router.post('/login', async (req, res, next) => {
     if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
     await pool.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = ?', [user.id]);
+    req.usuario = { id: user.id, rol: user.rol }; // para que la bitácora registre quién entró
 
     const token = jwt.sign({ id: user.id, rol: user.rol }, JWT_SECRET, { expiresIn: '8h' });
     res.json({

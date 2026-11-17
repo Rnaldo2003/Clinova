@@ -1,6 +1,8 @@
 // Rutas del DASHBOARD  ->  /api/dashboard
 const router = require('express').Router();
 const pool = require('../db');
+const Mensaje = require('../models/Mensaje');
+const { mongoListo } = require('../mongo');
 
 // Tarjetas de resumen del día (pacientes hoy, pendientes, mensajes, resultados, seguimientos)
 router.get('/resumen', async (_req, res, next) => {
@@ -9,8 +11,10 @@ router.get('/resumen', async (_req, res, next) => {
       "SELECT COUNT(*) AS n FROM citas WHERE fecha = CURDATE()");
     const [[pend]] = await pool.query(
       "SELECT COUNT(*) AS n FROM citas WHERE fecha = CURDATE() AND estado IN ('Pendiente','Confirmada','En espera')");
-    const [[msg]]  = await pool.query(
-      "SELECT COUNT(*) AS n FROM mensajes WHERE leido = 0");
+    // Mensajes de pacientes sin leer (MongoDB)
+    const msg = { n: mongoListo()
+      ? await Mensaje.countDocuments({ 'autor.tipo': 'paciente', leido: false })
+      : 0 };
     const [[lab]]  = await pool.query(
       "SELECT COUNT(*) AS n FROM ordenes_laboratorio WHERE estado = 'Lista'");
     const [[seg]]  = await pool.query(

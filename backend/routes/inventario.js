@@ -1,6 +1,7 @@
 // Rutas de INVENTARIO  ->  /api/inventario
 const router = require('express').Router();
 const pool = require('../db');
+const { notificarRoles } = require('../services/notificar');
 
 // Listar inventario. ?bajo=1 devuelve solo lo que está por debajo del stock mínimo
 router.get('/', async (req, res, next) => {
@@ -52,7 +53,7 @@ router.post('/:id/movimiento', async (req, res, next) => {
   try {
     await conn.beginTransaction();
     // FOR UPDATE bloquea la fila para que dos salidas simultáneas no se pisen
-    const [rows] = await conn.query('SELECT existencia FROM inventario WHERE id = ? FOR UPDATE', [req.params.id]);
+    const [rows] = await conn.query('SELECT nombre, existencia, stock_minimo FROM inventario WHERE id = ? FOR UPDATE', [req.params.id]);
     if (!rows.length) {
       await conn.rollback();
       return res.status(404).json({ error: 'Artículo no encontrado' });
@@ -68,6 +69,15 @@ router.post('/:id/movimiento', async (req, res, next) => {
     );
     await conn.query('UPDATE inventario SET existencia = ? WHERE id = ?', [nueva, req.params.id]);
     await conn.commit();
+
+    // Si quedó en o por debajo del mínimo (y antes no lo estaba), se avisa a los administradores
+    const art = rows[0];
+    if (nueva <= art.stock_minimo && art.existencia > art.stock_minimo) {
+      await notificarRoles(['admin', 'superadmin'], {
+        tipo: 'Inventario', titulo: `Stock bajo: ${art.nombre}`,
+        descripcion: `Quedan ${nueva} (mínimo ${art.stock_minimo})`, datos: { inventario_id: Number(req.params.id) },
+      });
+    }
     res.json({ mensaje: 'Movimiento registrado', existencia: nueva });
   } catch (e) {
     await conn.rollback();
