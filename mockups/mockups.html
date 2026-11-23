@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
+<title>Clinnova Móvil — Mockups</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:#eaf2fb;color:#17212c}
+header{background:linear-gradient(176deg,#6cbcf5,#3471b4);color:#fff;padding:36px 48px;display:flex;align-items:center;gap:28px}
+header img{height:64px;background:#fff;border-radius:16px;padding:8px 14px}
+header h1{margin:0;font-size:30px;letter-spacing:-.4px}
+header p{margin:4px 0 0;opacity:.9}
+section{padding:34px 48px 10px}
+h2{font-size:18px;margin:0 0 6px}
+.sub{color:#5a6b7d;margin:0 0 22px;font-size:14px}
+.row{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start}
+figure{margin:0;text-align:center}
+.frame{width:300px;height:640px;border-radius:40px;border:8px solid #101a26;overflow:hidden;background:#fff;box-shadow:0 20px 50px rgba(8,40,80,.28);position:relative}
+.frame iframe{width:364px;height:800px;border:0;transform:scale(.78);transform-origin:0 0}
+figcaption{margin-top:14px;font-weight:700;font-size:14px}
+figcaption small{display:block;font-weight:400;color:#5a6b7d;margin-top:2px;font-size:12.5px;max-width:300px;margin-inline:auto}
+.palette{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.sw{width:120px;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 4px 14px rgba(22,34,51,.08);font-size:12px}
+.sw i{display:block;height:54px}
+.sw div{padding:8px 10px}
+.sw b{display:block}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 30px}
+.flow span{background:#fff;padding:10px 16px;border-radius:12px;font-weight:600;box-shadow:0 4px 14px rgba(22,34,51,.08);font-size:13px}
+.flow em{color:#3471b4;font-style:normal;font-weight:800}
+footer{padding:20px 48px 40px;color:#5a6b7d;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <img src="../app-movil/assets/logo.png" alt="Clinnova">
+  <div><h1>Clinnova Móvil — Mockups</h1><p>App para médicos · Primer avance · Aplicaciones de Vanguardia</p></div>
+</header>
+
+<section>
+  <h2>Identidad visual</h2>
+  <p class="sub">Mismos colores y tipografía (Inter) del panel web, para que el médico reconozca el sistema en cualquier dispositivo.</p>
+  <div class="palette">
+    <div class="sw"><i style="background:#4fc3ff"></i><div><b>Brand</b>#4FC3FF</div></div>
+    <div class="sw"><i style="background:#1f7fd1"></i><div><b>Acción</b>#1F7FD1</div></div>
+    <div class="sw"><i style="background:#3471b4"></i><div><b>Encabezado</b>#3471B4</div></div>
+    <div class="sw"><i style="background:#eaf2fb"></i><div><b>Fondo</b>#EAF2FB</div></div>
+    <div class="sw"><i style="background:#16a864"></i><div><b>Éxito</b>#16A864</div></div>
+    <div class="sw"><i style="background:#c9871f"></i><div><b>Espera</b>#C9871F</div></div>
+    <div class="sw"><i style="background:#e3574e"></i><div><b>Alerta</b>#E3574E</div></div>
+    <div class="sw"><i style="background:#17212c"></i><div><b>Texto</b>#17212C</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Flujo de navegación</h2>
+  <div class="flow"><span>Login</span><em>→</em><span>Inicio</span><em>→</em><span>Agenda</span><em>→</em><span>Expediente del paciente</span><em>→</em><span>Mensaje</span><em>|</em><span>Perfil</span></div>
+</section>
+
+<section>
+  <h2>Pantallas principales</h2>
+  <p class="sub">Renderizadas directamente desde el frontend funcional (carpeta <code>app-movil/</code>).</p>
+  <div class="row" id="row"></div>
+</section>
+<footer>Clinnova Móvil v0.1 · Los mockups son capturas en vivo del código, por lo que siempre coinciden con la app.</footer>
+
+<script>
+const P=[
+ ['login','1 · Inicio de sesión','Acceso con correo y contraseña; conecta con la API del backend.'],
+ ['inicio','2 · Inicio','Resumen del día, siguiente paciente y agenda corta.'],
+ ['agenda','3 · Agenda','Semana, filtros por estado y lista de citas.'],
+ ['pacientes','4 · Pacientes','Búsqueda por nombre o expediente.'],
+ ['paciente/2','5 · Expediente','Datos, alergias, historial y acciones rápidas.'],
+ ['chat/2','6 · Mensajes','Conversación con el paciente.'],
+ ['perfil','7 · Perfil','Datos del médico, ajustes y cierre de sesión.']
+];
+row.innerHTML=P.map(([r,t,d])=>`<figure><div class="frame"><iframe src="../app-movil/index.html?mock#/${r}" loading="eager"></iframe></div><figcaption>${t}<small>${d}</small></figcaption></figure>`).join('');
+</script>
+</body>
+</html>
