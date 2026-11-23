@@ -1,0 +1,10 @@
+{
+  "name": "Clinnova Móvil",
+  "short_name": "Clinnova",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#eaf2fb",
+  "theme_color": "#3471b4",
+  "lang": "es",
+  "icons": [{ "src": "assets/logo.png", "sizes": "any", "type": "image/png" }]
+}

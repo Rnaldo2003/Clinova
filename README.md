@@ -11,6 +11,9 @@ Sistema de gestión médica para clínicas y consultorios — proyecto de la cla
 | `clinnova.sql` | Script de la base de datos MySQL `clinnova` (tablas + datos de ejemplo) |
 | `backend/` | API REST en Node.js + Express + MySQL + MongoDB — ver [backend/README.md](backend/README.md) |
 | `Sistema_para_Doctores.docx` | Documento de presentación del producto |
+| `app-movil/` | Frontend de la app móvil (prototipo navegable HTML/CSS/JS) — abrir `app-movil/index.html` |
+| `mockups/` | Mockups de las pantallas de la app móvil |
+| `ENTREGA_AVANCE_2.md` | Documentación del Avance 2 (frontend y mockups) |
 
 ## Cómo correrlo
 
