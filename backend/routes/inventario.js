@@ -33,6 +33,47 @@ router.post('/', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Editar artículo (la existencia solo cambia con movimientos)
+// Body: { nombre, tipo, stock_minimo, lote?, vencimiento?, proveedor? }
+router.put('/:id', async (req, res, next) => {
+  try {
+    const b = req.body;
+    if (!b.nombre) return res.status(400).json({ error: 'nombre es obligatorio' });
+    if (b.tipo && !['Medicamento', 'Material', 'Insumo'].includes(b.tipo)) {
+      return res.status(400).json({ error: 'tipo debe ser Medicamento, Material o Insumo' });
+    }
+    if (Number(b.stock_minimo) < 0) return res.status(400).json({ error: 'stock_minimo no puede ser negativo' });
+    const [r] = await pool.query(
+      'UPDATE inventario SET nombre=?, tipo=?, stock_minimo=?, lote=?, vencimiento=?, proveedor=? WHERE id=?',
+      [b.nombre, b.tipo || 'Medicamento', Number(b.stock_minimo) || 0, b.lote || null, b.vencimiento || null,
+       b.proveedor || null, req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Artículo no encontrado' });
+    res.json({ mensaje: 'Artículo actualizado' });
+  } catch (e) { next(e); }
+});
+
+// Eliminar artículo (borra también sus movimientos). Solo admin.
+router.delete('/:id', async (req, res, next) => {
+  try {
+    if (!['admin', 'superadmin'].includes(req.usuario.rol)) {
+      return res.status(403).json({ error: 'Solo un administrador puede eliminar artículos' });
+    }
+    const [r] = await pool.query('DELETE FROM inventario WHERE id = ?', [req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Artículo no encontrado' });
+    res.json({ mensaje: 'Artículo eliminado' });
+  } catch (e) { next(e); }
+});
+
+// Historial de movimientos de un artículo
+router.get('/:id/movimientos', async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, tipo, cantidad, motivo, creado_en FROM movimientos_inventario WHERE inventario_id = ? ORDER BY creado_en DESC, id DESC LIMIT 100',
+      [req.params.id]);
+    res.json(rows);
+  } catch (e) { next(e); }
+});
+
 // Registrar movimiento y actualizar existencia.
 //   Entrada: suma `cantidad` (positiva)      Salida: resta `cantidad` (positiva)
 //   Ajuste:  `cantidad` es la corrección, puede ser negativa (ej. -3 por merma)

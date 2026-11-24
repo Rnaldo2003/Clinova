@@ -12,13 +12,16 @@ router.get('/', async (req, res, next) => {
     const where = [];
     const params = [];
     if (req.query.fecha)     { where.push('c.fecha = ?');     params.push(req.query.fecha); }
+    if (req.query.desde)     { where.push('c.fecha >= ?');    params.push(req.query.desde); }
+    if (req.query.hasta)     { where.push('c.fecha <= ?');    params.push(req.query.hasta); }
+    if (req.query.paciente_id) { where.push('c.paciente_id = ?'); params.push(req.query.paciente_id); }
     if (req.query.medico_id) { where.push('c.medico_id = ?'); params.push(req.query.medico_id); }
     if (req.query.estado)    { where.push('c.estado = ?');    params.push(req.query.estado); }
     const filtro = where.length ? 'WHERE ' + where.join(' AND ') : '';
 
     const [rows] = await pool.query(
-      `SELECT c.id, c.fecha, c.hora_inicio, c.hora_fin, c.tipo, c.estado, c.motivo,
-              p.id AS paciente_id, CONCAT(p.nombres,' ',p.apellidos) AS paciente,
+      `SELECT c.id, DATE_FORMAT(c.fecha, '%Y-%m-%d') AS fecha, c.hora_inicio, c.hora_fin, c.tipo, c.estado, c.motivo,
+              c.medico_id, p.expediente_no, p.id AS paciente_id, CONCAT(p.nombres,' ',p.apellidos) AS paciente,
               TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
               CONCAT(u.nombres,' ',u.apellidos) AS medico
          FROM citas c
@@ -30,6 +33,46 @@ router.get('/', async (req, res, next) => {
     );
     res.json(rows);
   } catch (e) { next(e); }
+});
+
+// Una cita por id
+router.get('/:id', async (req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.*, DATE_FORMAT(c.fecha, '%Y-%m-%d') AS fecha,
+              CONCAT(p.nombres,' ',p.apellidos) AS paciente, p.expediente_no,
+              CONCAT(u.nombres,' ',u.apellidos) AS medico
+         FROM citas c JOIN pacientes p ON p.id = c.paciente_id JOIN usuarios u ON u.id = c.medico_id
+        WHERE c.id = ?`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Cita no encontrada' });
+    res.json(rows[0]);
+  } catch (e) { next(e); }
+});
+
+// Editar o reprogramar una cita (valida choques de horario sin contarse a sí misma)
+// Body: { paciente_id, medico_id, fecha, hora_inicio, hora_fin?, tipo?, motivo?, notas?, servicio_id? }
+router.put('/:id', async (req, res, next) => {
+  try {
+    const b = req.body;
+    if (!b.paciente_id || !b.medico_id || !b.fecha || !b.hora_inicio) {
+      return res.status(400).json({ error: 'paciente_id, medico_id, fecha y hora_inicio son obligatorios' });
+    }
+    if (b.tipo && !TIPOS.includes(b.tipo)) return res.status(400).json({ error: 'tipo inválido', permitidos: TIPOS });
+    const [choque] = await pool.query(
+      `SELECT id FROM citas WHERE medico_id = ? AND fecha = ? AND hora_inicio = ? AND id <> ?
+          AND estado NOT IN ('Cancelada','No asistio')`, [b.medico_id, b.fecha, b.hora_inicio, req.params.id]);
+    if (choque.length) return res.status(409).json({ error: 'El médico ya tiene una cita a esa hora', cita_id: choque[0].id });
+    const [r] = await pool.query(
+      `UPDATE citas SET paciente_id=?, medico_id=?, servicio_id=?, fecha=?, hora_inicio=?, hora_fin=?, tipo=?, motivo=?, notas=?
+        WHERE id=?`,
+      [b.paciente_id, b.medico_id, b.servicio_id || null, b.fecha, b.hora_inicio, b.hora_fin || null,
+       b.tipo || 'Consulta general', b.motivo || null, b.notas || null, req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Cita no encontrada' });
+    res.json({ mensaje: 'Cita actualizada' });
+  } catch (e) {
+    if (e.code === 'ER_NO_REFERENCED_ROW_2') return res.status(400).json({ error: 'El paciente, médico o servicio no existe' });
+    next(e);
+  }
 });
 
 // Crear cita

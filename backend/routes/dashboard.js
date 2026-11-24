@@ -20,7 +20,17 @@ router.get('/resumen', async (_req, res, next) => {
     const [[seg]]  = await pool.query(
       "SELECT COUNT(*) AS n FROM seguimientos WHERE estado = 'Pendiente' AND fecha_programada <= CURDATE()");
 
+    const [[esp]]  = await pool.query(
+      "SELECT COUNT(*) AS n FROM citas WHERE fecha = CURDATE() AND estado = 'En espera'");
+    const [[ate]]  = await pool.query(
+      "SELECT COUNT(*) AS n FROM citas WHERE fecha = CURDATE() AND estado = 'Atendida'");
+    const [[stk]]  = await pool.query(
+      'SELECT COUNT(*) AS n FROM inventario WHERE existencia <= stock_minimo');
+
     res.json({
+      en_espera:            esp.n,
+      atendidas:            ate.n,
+      stock_bajo:           stk.n,
       pacientes_hoy:        pac.n,
       pendientes:           pend.n,
       mensajes:             msg.n,
@@ -34,8 +44,8 @@ router.get('/resumen', async (_req, res, next) => {
 router.get('/agenda-hoy', async (_req, res, next) => {
   try {
     const [rows] = await pool.query(
-      `SELECT c.hora_inicio, c.tipo, c.estado,
-              CONCAT(p.nombres,' ',p.apellidos) AS paciente,
+      `SELECT c.id, c.paciente_id, c.hora_inicio, c.tipo, c.estado, c.motivo,
+              CONCAT(p.nombres,' ',p.apellidos) AS paciente, p.expediente_no,
               TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad
          FROM citas c
          JOIN pacientes p ON p.id = c.paciente_id
@@ -54,6 +64,19 @@ router.get('/tipos-consulta', async (_req, res, next) => {
          FROM citas WHERE fecha = CURDATE()
         GROUP BY tipo ORDER BY total DESC`
     );
+    res.json(rows);
+  } catch (e) { next(e); }
+});
+
+// Citas por día de los últimos 7 días (para la gráfica de la semana)
+router.get('/semana', async (_req, res, next) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, COUNT(*) AS total,
+              CAST(SUM(estado = 'Atendida') AS UNSIGNED) AS atendidas,
+              CAST(SUM(estado IN ('Cancelada','No asistio')) AS UNSIGNED) AS canceladas
+         FROM citas WHERE fecha BETWEEN CURDATE() - INTERVAL 6 DAY AND CURDATE()
+        GROUP BY fecha ORDER BY fecha`);
     res.json(rows);
   } catch (e) { next(e); }
 });

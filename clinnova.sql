@@ -374,13 +374,13 @@ INSERT INTO servicios (id, clinica_id, nombre, duracion_min, precio) VALUES
   (3,1,'Primera consulta',40,800.00);
 
 -- Pacientes (los del dashboard)
-INSERT INTO pacientes (id, clinica_id, expediente_no, nombres, apellidos, fecha_nacimiento, sexo, telefono) VALUES
-  (1,1,'EXP-0001','Juan','Pérez García','1991-03-10','M','+504 9900-0001'),
-  (2,1,'EXP-0002','María','López','1974-06-20','F','+504 9900-0002'),
-  (3,1,'EXP-0003','Carlos','Reyes','1985-01-15','M','+504 9900-0003'),
-  (4,1,'EXP-0004','Ana','Martínez','1998-09-05','F','+504 9900-0004'),
-  (5,1,'EXP-0005','Luis','Herrera','1966-11-30','M','+504 9900-0005'),
-  (6,1,'EXP-0006','Sofía','Ramírez','1993-07-22','F','+504 9900-0006');
+INSERT INTO pacientes (id, clinica_id, expediente_no, nombres, apellidos, fecha_nacimiento, sexo, telefono, tipo_sangre, alergias, antecedentes) VALUES
+  (1,1,'EXP-0001','Juan','Pérez García','1991-03-10','M','+504 9900-0001','O+',NULL,'Ninguno relevante'),
+  (2,1,'EXP-0002','María','López','1974-06-20','F','+504 9900-0002','A+','Penicilina','Hipertensión arterial, diabetes tipo 2'),
+  (3,1,'EXP-0003','Carlos','Reyes','1985-01-15','M','+504 9900-0003','B+',NULL,'Asma leve'),
+  (4,1,'EXP-0004','Ana','Martínez','1998-09-05','F','+504 9900-0004','O-','Sulfas',NULL),
+  (5,1,'EXP-0005','Luis','Herrera','1966-11-30','M','+504 9900-0005','A-',NULL,'Hipertensión arterial'),
+  (6,1,'EXP-0006','Sofía','Ramírez','1993-07-22','F','+504 9900-0006','O+','Ibuprofeno',NULL);
 
 -- Citas de hoy (ajusta CURDATE() si quieres otra fecha)
 INSERT INTO citas (clinica_id, paciente_id, medico_id, servicio_id, fecha, hora_inicio, tipo, estado) VALUES
@@ -396,6 +396,33 @@ INSERT INTO inventario (clinica_id, nombre, tipo, existencia, stock_minimo, venc
   (1,'Amoxicilina 500mg','Medicamento',120,30,'2027-05-01','DistriFarma'),
   (1,'Guantes de látex (caja)','Material',8,10,NULL,'MediSupply'),
   (1,'Alcohol 70% 1L','Insumo',40,15,'2028-01-01','MediSupply');
+
+-- Historial de ejemplo: consultas, recetas y signos vitales de días anteriores
+INSERT INTO consultas (id, paciente_id, medico_id, fecha, motivo, historia, exploracion, diagnostico, cie10, tratamiento, indicaciones) VALUES
+  (1,2,1,NOW() - INTERVAL 21 DAY,'Control de presión arterial','Refiere cefalea ocasional por las tardes.','PA 138/88, FC 76 lpm. Sin edema.','Hipertensión esencial','I10','Losartán 50 mg diario','Dieta baja en sal, caminar 30 min diarios'),
+  (2,2,1,NOW() - INTERVAL 7 DAY,'Resultados de glucosa','Trae glucosa en ayunas de 126 mg/dL.','Paciente estable.','Diabetes mellitus tipo 2','E11','Metformina 850 mg con el almuerzo','Control en 1 mes con hemoglobina glicosilada'),
+  (3,1,1,NOW() - INTERVAL 40 DAY,'Dolor de garganta y fiebre','3 días con odinofagia y fiebre de 38.5 °C.','Faringe hiperémica, sin placas.','Faringitis aguda','J02.9','Acetaminofén 500 mg','Líquidos abundantes y reposo'),
+  (4,3,1,NOW() - INTERVAL 15 DAY,'Seguimiento de asma','Sin crisis en el último mes.','Murmullo vesicular normal.','Asma leve controlada','J45.2','Salbutamol inhalador si hay crisis','Evitar el polvo y el humo'),
+  (5,5,1,NOW() - INTERVAL 3 DAY,'Control de presión','Cumple tratamiento.','PA 130/84.','Hipertensión esencial','I10','Continuar Enalapril 10 mg','Control en 2 meses');
+
+INSERT INTO recetas (id, consulta_id, paciente_id, medico_id, fecha, notas) VALUES
+  (1,1,2,1,NOW() - INTERVAL 21 DAY,'Tomar a la misma hora todos los días'),
+  (2,2,2,1,NOW() - INTERVAL 7 DAY,NULL),
+  (3,3,1,1,NOW() - INTERVAL 40 DAY,NULL),
+  (4,5,5,1,NOW() - INTERVAL 3 DAY,NULL);
+
+INSERT INTO receta_items (receta_id, medicamento, dosis, frecuencia, duracion, indicaciones) VALUES
+  (1,'Losartán','50 mg','1 vez al día','30 días','En la mañana'),
+  (2,'Metformina','850 mg','1 vez al día','30 días','Con el almuerzo'),
+  (2,'Losartán','50 mg','1 vez al día','30 días',NULL),
+  (3,'Acetaminofén','500 mg','cada 8 horas','5 días','Si hay fiebre o dolor'),
+  (4,'Enalapril','10 mg','1 vez al día','60 días',NULL);
+
+INSERT INTO signos_vitales (paciente_id, tomado_por, peso_kg, talla_cm, temperatura_c, presion_sistolica, presion_diastolica, frecuencia_cardiaca, saturacion_o2, creado_en) VALUES
+  (2,2,72.0,158,36.6,138,88,76,98,NOW() - INTERVAL 21 DAY),
+  (2,2,71.5,158,36.5,134,86,74,98,NOW() - INTERVAL 7 DAY),
+  (1,2,78.0,175,38.5,120,78,92,97,NOW() - INTERVAL 40 DAY),
+  (5,2,84.0,170,36.7,130,84,70,97,NOW() - INTERVAL 3 DAY);
 
 -- ============================================================
 --  Consultas rápidas de verificación (descomenta para probar):

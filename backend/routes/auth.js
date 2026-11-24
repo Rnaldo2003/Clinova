@@ -51,6 +51,21 @@ router.get('/me', requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Cambiar MI contraseña. Body: { actual, nueva }
+router.patch('/password', requireAuth, async (req, res, next) => {
+  try {
+    const { actual, nueva } = req.body;
+    if (!actual || !nueva) return res.status(400).json({ error: 'actual y nueva son obligatorias' });
+    if (String(nueva).length < 6) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+    const [[u]] = await pool.query('SELECT password_hash FROM usuarios WHERE id = ?', [req.usuario.id]);
+    if (!u || !(await bcrypt.compare(String(actual), u.password_hash))) {
+      return res.status(400).json({ error: 'La contraseña actual no es correcta' });
+    }
+    await pool.query('UPDATE usuarios SET password_hash = ? WHERE id = ?', [await bcrypt.hash(String(nueva), 10), req.usuario.id]);
+    res.json({ mensaje: 'Contraseña actualizada' });
+  } catch (e) { next(e); }
+});
+
 // Registrar un usuario del personal. SOLO un administrador con sesión iniciada puede hacerlo.
 // (Para crear el PRIMER usuario usa:  npm run crear-usuario)
 // Body: { nombres, apellidos, email, password, rol_id, especialidad_id?, sede_id?, colegiatura? }

@@ -43,6 +43,16 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+// --- Panel web: se sirve desde la misma API (http://localhost:4000) ---
+// Solo se publican los archivos del panel; nunca el backend, el .env ni el .sql.
+const path = require('path');
+const RAIZ = path.join(__dirname, '..');
+app.get('/', (_req, res) => res.redirect('/login.html'));
+app.get(['/login.html', '/Clinnova.html'], (req, res) => res.sendFile(path.join(RAIZ, req.path)));
+app.use('/img', express.static(path.join(RAIZ, 'img')));
+app.use('/panel', express.static(path.join(RAIZ, 'panel')));
+app.use('/app-movil', express.static(path.join(RAIZ, 'app-movil')));
+
 // --- Rutas de la API ---
 // /api/auth es pública (login). Todas las demás exigen haber iniciado sesión.
 app.use('/api/auth',       require('./routes/auth'));
@@ -50,6 +60,10 @@ app.use('/api/pacientes',  requireAuth, require('./routes/pacientes'));
 app.use('/api/citas',      requireAuth, require('./routes/citas'));
 app.use('/api/dashboard',  requireAuth, require('./routes/dashboard'));
 app.use('/api/inventario', requireAuth, require('./routes/inventario'));
+app.use('/api/consultas',  requireAuth, require('./routes/consultas'));
+app.use('/api/recetas',    requireAuth, require('./routes/recetas'));
+app.use('/api/catalogos',  requireAuth, require('./routes/catalogos'));
+app.use('/api/usuarios',   requireAuth, requireRol('admin', 'superadmin'), require('./routes/usuarios'));
 // Rutas que usan MongoDB
 app.use('/api/mensajes',       requireAuth, requireMongo, require('./routes/mensajes'));
 app.use('/api/notificaciones', requireAuth, requireMongo, require('./routes/notificaciones'));
