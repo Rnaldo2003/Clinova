@@ -51,6 +51,43 @@ Debe responder: `{ "api": "ok", "db": "conectada", "mongo": "conectada" }`
 | GET  | `/api/inventario?bajo=1` | Inventario (o solo stock bajo) |
 | POST | `/api/inventario` | Crea artículo |
 | POST | `/api/inventario/:id/movimiento` | Entrada/Salida/Ajuste (avisa a los admin si queda stock bajo) |
+| PUT | `/api/inventario/:id` | Editar artículo |
+| DELETE | `/api/inventario/:id` | Eliminar artículo (solo admin) |
+| GET | `/api/inventario/:id/movimientos` | Historial de movimientos |
+
+### Pacientes, citas y catálogos (extra)
+
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| GET  | `/api/pacientes/:id/historial` | Consultas, recetas (con medicamentos), citas y signos vitales |
+| POST | `/api/pacientes/:id/signos` | Registrar signos vitales (enfermería, médico o admin) |
+| GET  | `/api/citas/:id` | Una cita |
+| PUT  | `/api/citas/:id` | Editar o reprogramar (valida choques de horario) |
+| GET  | `/api/catalogos` | Roles, especialidades, servicios, médicos, estados y tipos de cita |
+| GET  | `/api/dashboard/semana` | Citas por día de los últimos 7 días |
+| PATCH | `/api/auth/password` | Cambiar mi contraseña. Body: `actual`, `nueva` |
+
+### Consultas y recetas (solo médico o admin para crear)
+
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| GET  | `/api/consultas?paciente_id=&medico_id=&desde=&hasta=&q=` | Lista y búsqueda |
+| GET  | `/api/consultas/:id` | Consulta completa con sus recetas |
+| POST | `/api/consultas` | Registrar. Si trae `cita_id`, la cita pasa a "Atendida" |
+| PUT  | `/api/consultas/:id` | Editar (solo el médico que la hizo o admin) |
+| GET  | `/api/recetas?paciente_id=&medico_id=&q=` | Lista y búsqueda por paciente o medicamento |
+| GET  | `/api/recetas/:id` | Receta con medicamentos y datos para imprimir |
+| POST | `/api/recetas` | Crear. Body: `paciente_id`, `consulta_id?`, `notas?`, `items: [{medicamento, dosis, frecuencia, duracion, indicaciones}]` |
+| DELETE | `/api/recetas/:id` | Anular (solo quien la hizo o admin) |
+
+### Usuarios (solo admin)
+
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| GET  | `/api/usuarios?q=` | Personal de la clínica |
+| PUT  | `/api/usuarios/:id` | Editar datos y rol |
+| PATCH | `/api/usuarios/:id/activo` | Activar / desactivar. Body: `activo` |
+| PATCH | `/api/usuarios/:id/password` | Restablecer contraseña |
 
 ### MongoDB
 
@@ -124,6 +161,10 @@ backend/
     ├── citas.js
     ├── dashboard.js
     ├── inventario.js
+    ├── consultas.js
+    ├── recetas.js
+    ├── usuarios.js       # solo admin
+    ├── catalogos.js      # listas para formularios
     ├── mensajes.js       # MongoDB
     ├── notificaciones.js # MongoDB
     └── bitacora.js       # MongoDB

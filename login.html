@@ -277,7 +277,8 @@ const msg=document.getElementById('msg');
 function showMsg(text,type){ msg.textContent=text; msg.className='msg show '+type; }
 
 // login contra el backend
-const API='http://localhost:4000/api';
+// Si el login se abre desde la API (http://localhost:4000) usa la misma dirección
+const API = location.port === '4000' ? '/api' : 'http://localhost:4000/api';
 document.getElementById('loginForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const d=T[lang];
