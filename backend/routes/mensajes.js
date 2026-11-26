@@ -107,7 +107,7 @@ router.post('/entrante', async (req, res, next) => {
 
     const nombre = `${pac.nombres} ${pac.apellidos}`;
     const msg = await Mensaje.create({
-      paciente_id: pac.id, autor: { tipo: 'paciente', id: pac.id, nombre }, texto, area,
+      paciente_id: pac.id, autor: { tipo: 'paciente', id: pac.id, nombre }, texto, area, leido_paciente: true,
     });
     await notificarRoles(['medico', 'recepcion', 'admin'], {
       tipo: 'Mensaje', titulo: `Nuevo mensaje de ${nombre}`,

@@ -17,7 +17,8 @@ const mensajeSchema = new Schema(
       tamano_kb: Number,
     },
     area: { type: String, enum: ['Administrativa', 'Clinica', 'Laboratorio', 'Recepcion'], default: 'Clinica' },
-    leido: { type: Boolean, default: false },
+    leido: { type: Boolean, default: false },          // lo leyó la clínica (mensajes del paciente)
+    leido_paciente: { type: Boolean, default: false }, // lo leyó el paciente (mensajes de la clínica)
   },
   { timestamps: { createdAt: 'creado_en', updatedAt: 'actualizado_en' } }
 );

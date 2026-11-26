@@ -61,6 +61,8 @@ svg.ic{width:20px;height:20px;stroke:currentColor;stroke-width:1.9;fill:none;str
 .btn:active{transform:translateY(1px)}
 .btn .ic{width:19px;height:19px;stroke-width:2.4}
 
+[hidden]{display:none !important}
+.sbtn.portal{width:100%;margin-top:18px;text-decoration:none}
 .divider{display:flex;align-items:center;gap:14px;color:var(--ink-3);font-size:13px;margin:20px 0}
 .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
 
@@ -162,25 +164,40 @@ svg.ic{width:20px;height:20px;stroke:currentColor;stroke-width:1.9;fill:none;str
 
         <div class="row">
           <label class="check"><input type="checkbox" id="remember" checked><span class="box"><svg class="ic"><use href="#i-check"/></svg></span><span data-i18n="remember">Recordarme</span></label>
-          <a class="link" data-i18n="forgot">¿Olvidaste tu contraseña?</a>
+          <a class="link" id="forgotLink" href="#" data-i18n="forgot">¿Olvidaste tu contraseña?</a>
         </div>
 
         <button class="btn" type="submit" id="submitBtn"><span data-i18n="signin">Iniciar sesión</span> <svg class="ic"><use href="#i-arrow"/></svg></button>
 
-        <div class="divider" data-i18n="orwith">o continúa con</div>
-
-        <div class="social">
-          <button type="button" class="sbtn" id="googleBtn">
-            <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.4l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.6l6.2 5.2C40.9 35.6 44 30.3 44 24c0-1.2-.1-2.3-.4-3.5z"/></svg>
-            Google
-          </button>
-          <button type="button" class="sbtn" id="appleBtn">
-            <svg viewBox="0 0 24 24"><path fill="#111" d="M16.3 12.7c0-2 1.6-3 1.7-3.1-1-1.4-2.4-1.6-3-1.6-1.3-.1-2.5.7-3.1.7-.6 0-1.6-.7-2.7-.7-1.4 0-2.7.8-3.4 2-1.5 2.5-.4 6.3 1 8.3.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7 1.2 0 1.6.7 2.7.6 1.1 0 1.8-1 2.5-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.1-.8-2.1-3.3zM14.3 6.3c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.5.6-1 1.6-.9 2.6.9.1 1.8-.5 2.5-1.2z"/></svg>
-            Apple
-          </button>
-        </div>
+        <a class="sbtn portal" href="portal.html"><svg class="ic" style="width:19px;height:19px"><use href="#i-users"/></svg><span data-i18n="portal">¿Eres paciente? Entra al portal de pacientes</span></a>
 
         <p class="foot"><span data-i18n="noacc">¿No tienes una cuenta?</span> <a class="link" data-i18n="contact">Contacta al administrador</a></p>
+      </form>
+
+      <!-- Recuperar contraseña: pide el correo -->
+      <form class="form-inner" id="recForm" novalidate hidden>
+        <img class="flogo" src="img/logo-clinnova.png" alt="Clinnova">
+        <h1><span data-i18n="r1">Recupera tu </span><b data-i18n="r2">contraseña</b></h1>
+        <p class="sub" data-i18n="rsub">Escribe el correo con el que entras a Clinnova y te enviaremos un enlace para crear una nueva.</p>
+        <div class="msg" id="rmsg"></div>
+        <label class="lbl" for="remail" data-i18n="lblEmail">Correo electrónico</label>
+        <div class="field"><svg class="ic lic"><use href="#i-mail"/></svg><input id="remail" type="email" autocomplete="username" data-ph="phEmail" placeholder="tu@email.com"></div>
+        <button class="btn" type="submit" id="rBtn"><span data-i18n="rsend">Enviar enlace</span> <svg class="ic"><use href="#i-arrow"/></svg></button>
+        <p class="foot"><a class="link" href="#" data-back data-i18n="back">← Volver a iniciar sesión</a></p>
+      </form>
+
+      <!-- Nueva contraseña: se abre desde el enlace del correo (login.html?reset=...) -->
+      <form class="form-inner" id="resetForm" novalidate hidden>
+        <img class="flogo" src="img/logo-clinnova.png" alt="Clinnova">
+        <h1><span data-i18n="n1">Crea una </span><b data-i18n="n2">nueva contraseña</b></h1>
+        <p class="sub" data-i18n="nsub">Debe tener al menos 6 caracteres.</p>
+        <div class="msg" id="nmsg"></div>
+        <label class="lbl" for="npwd" data-i18n="lblNew">Nueva contraseña</label>
+        <div class="field"><svg class="ic lic"><use href="#i-lock"/></svg><input id="npwd" type="password" autocomplete="new-password"></div>
+        <label class="lbl" for="npwd2" data-i18n="lblNew2">Repite la contraseña</label>
+        <div class="field"><svg class="ic lic"><use href="#i-lock"/></svg><input id="npwd2" type="password" autocomplete="new-password"></div>
+        <button class="btn" type="submit" id="nBtn"><span data-i18n="nsave">Guardar contraseña</span> <svg class="ic"><use href="#i-arrow"/></svg></button>
+        <p class="foot"><a class="link" href="login.html" data-i18n="back">← Volver a iniciar sesión</a></p>
       </form>
     </section>
 
@@ -211,7 +228,11 @@ const T={
     noacc:'¿No tienes una cuenta?', contact:'Contacta al administrador', langLabel:'Español',
     mFill:'Completa tu correo y contraseña.', mChecking:'Verificando…', mWelcome:'¡Bienvenido %s! Entrando…',
     mBad:'Credenciales inválidas.', mConn:'No se pudo conectar con el servidor. ¿Está corriendo el backend en el puerto 4000?',
-    mSoon:'El inicio de sesión con %s se configurará más adelante.'},
+    portal:'¿Eres paciente? Entra al portal de pacientes',
+    r1:'Recupera tu ', r2:'contraseña', rsub:'Escribe el correo con el que entras a Clinnova y te enviaremos un enlace para crear una nueva.',
+    rsend:'Enviar enlace', back:'← Volver a iniciar sesión', rFill:'Escribe tu correo.',
+    n1:'Crea una ', n2:'nueva contraseña', nsub:'Debe tener al menos 6 caracteres.', lblNew:'Nueva contraseña', lblNew2:'Repite la contraseña',
+    nsave:'Guardar contraseña', nShort:'La contraseña debe tener al menos 6 caracteres.', nDiff:'Las contraseñas no coinciden.'},
   en:{docTitle:'Clinnova — Sign in', t1:'Sign in to ', t2:'your account',
     sub:'Access Clinnova and manage your clinic quickly, securely and efficiently.',
     lblEmail:'Email', phEmail:'you@email.com', lblPwd:'Password', phPwd:'Enter your password',
@@ -219,7 +240,11 @@ const T={
     noacc:"Don't have an account?", contact:'Contact the administrator', langLabel:'English',
     mFill:'Enter your email and password.', mChecking:'Verifying…', mWelcome:'Welcome %s! Signing in…',
     mBad:'Invalid credentials.', mConn:'Could not connect to the server. Is the backend running on port 4000?',
-    mSoon:'%s sign-in will be set up later.'}
+    portal:'Are you a patient? Go to the patient portal',
+    r1:'Recover your ', r2:'password', rsub:'Enter the email you use for Clinnova and we will send you a link to create a new one.',
+    rsend:'Send link', back:'← Back to sign in', rFill:'Enter your email.',
+    n1:'Create a ', n2:'new password', nsub:'It must have at least 6 characters.', lblNew:'New password', lblNew2:'Repeat the password',
+    nsave:'Save password', nShort:'The password must have at least 6 characters.', nDiff:'The passwords do not match.'}
 };
 // ===== Características (carrusel) =====
 const SLIDES={
@@ -298,8 +323,44 @@ document.getElementById('loginForm').addEventListener('submit', async (e)=>{
   }catch(err){ showMsg(d.mConn,'err'); }
   finally{ btn.disabled=false; btn.style.opacity='1'; }
 });
-document.getElementById('googleBtn').addEventListener('click',()=>showMsg(T[lang].mSoon.replace('%s','Google'),'ok'));
-document.getElementById('appleBtn').addEventListener('click',()=>showMsg(T[lang].mSoon.replace('%s','Apple'),'ok'));
+// ===== Recuperar contraseña =====
+const forms={login:document.getElementById('loginForm'),rec:document.getElementById('recForm'),reset:document.getElementById('resetForm')};
+function verForm(k){ Object.entries(forms).forEach(([n,f])=>f.hidden=n!==k); const i=forms[k].querySelector('input'); if(i) setTimeout(()=>i.focus(),30); }
+function aviso(el,text,type){ el.textContent=text; el.className='msg show '+type; }
+document.getElementById('forgotLink').addEventListener('click',(e)=>{ e.preventDefault(); document.getElementById('remail').value=document.getElementById('email').value; verForm('rec'); });
+document.querySelectorAll('[data-back]').forEach(a=>a.addEventListener('click',(e)=>{ e.preventDefault(); verForm('login'); }));
+
+forms.rec.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const m=document.getElementById('rmsg'), email=document.getElementById('remail').value.trim(), btn=document.getElementById('rBtn');
+  if(!email){ aviso(m,T[lang].rFill,'err'); return; }
+  btn.disabled=true;
+  try{
+    const r=await fetch(API+'/auth/recuperar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,tipo:'personal'})});
+    const data=await r.json();
+    aviso(m, r.ok ? data.mensaje : (data.error||T[lang].mConn), r.ok?'ok':'err');
+  }catch(_){ aviso(m,T[lang].mConn,'err'); }
+  finally{ btn.disabled=false; }
+});
+
+const resetToken=new URLSearchParams(location.search).get('reset');
+if(resetToken) verForm('reset');
+forms.reset.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const m=document.getElementById('nmsg'), a=document.getElementById('npwd').value, b=document.getElementById('npwd2').value, btn=document.getElementById('nBtn');
+  if(a.length<6){ aviso(m,T[lang].nShort,'err'); return; }
+  if(a!==b){ aviso(m,T[lang].nDiff,'err'); return; }
+  btn.disabled=true;
+  try{
+    const r=await fetch(API+'/auth/restablecer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:resetToken,nueva:a})});
+    const data=await r.json();
+    if(!r.ok){ aviso(m,data.error,'err'); return; }
+    aviso(m,data.mensaje,'ok');
+    history.replaceState(null,'','login.html');
+    setTimeout(()=>verForm('login'),1800);
+  }catch(_){ aviso(m,T[lang].mConn,'err'); }
+  finally{ btn.disabled=false; }
+});
 
 applyLang();
 </script>

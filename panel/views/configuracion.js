@@ -110,16 +110,16 @@ C.vista('configuracion', {
       const ACCION = { POST: ['Creó', 'b-green'], PUT: ['Editó', 'b-blue'], PATCH: ['Cambió', 'b-purple'], DELETE: ['Eliminó', 'b-red'] };
       const QUE = (r) => {
         const m = r.ruta.replace('/api/', '').split('/');
-        const mapa = { auth: m[1] === 'login' ? 'Inicio de sesión' : m[1] === 'password' ? 'Contraseña' : 'Usuario', pacientes: m[2] === 'signos' ? 'Signos vitales' : 'Paciente', citas: m[2] === 'estado' ? 'Estado de cita' : 'Cita', consultas: 'Consulta', recetas: 'Receta', inventario: m[2] === 'movimiento' ? 'Movimiento de inventario' : 'Inventario', mensajes: 'Mensaje', notificaciones: 'Notificación', usuarios: 'Usuario' };
+        const mapa = { auth: m[1] === 'login' ? 'Inicio de sesión' : m[1] === 'password' ? 'Contraseña' : m[1] === 'recuperar' ? 'Pidió recuperar contraseña' : m[1] === 'restablecer' ? 'Restableció contraseña' : 'Usuario', pacientes: m[2] === 'signos' ? 'Signos vitales' : 'Paciente', citas: m[2] === 'estado' ? 'Estado de cita' : 'Cita', consultas: 'Consulta', recetas: 'Receta', inventario: m[2] === 'movimiento' ? 'Movimiento de inventario' : 'Inventario', mensajes: 'Mensaje', notificaciones: 'Notificación', usuarios: 'Usuario', portal: m[1] === 'login' ? 'Inicio de sesión' : m[1] === 'mensajes' ? 'Mensaje (portal)' : m[1] === 'citas' ? 'Cita (portal)' : m[1] === 'yo' ? 'Sus datos' : 'Portal' };
         return (mapa[m[0]] || m[0]) + (m[1] && /^\d+$/.test(m[1]) ? ' #' + m[1] : '');
       };
       box.innerHTML = `<div class="toolbar"><span class="sub">Últimas ${regs.length} acciones que cambiaron datos (se guarda en MongoDB)</span></div>
         <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Sobre</th><th>Resultado</th></tr></thead><tbody>
         ${regs.map((r) => {
-          const [acc, cls] = r.ruta === '/api/auth/login' ? ['Entró', 'b-blue'] : ACCION[r.metodo] || [r.metodo, 'b-grey'];
+          const [acc, cls] = /\/login$/.test(r.ruta) ? ['Entró', 'b-blue'] : ACCION[r.metodo] || [r.metodo, 'b-grey'];
           const ok = r.status < 400;
           return `<tr><td style="white-space:nowrap">${fechaHora(r.fecha)}</td>
-            <td>${r.usuario_id ? esc(nom[r.usuario_id] || 'Usuario #' + r.usuario_id) : '<span class="sub">Sin sesión</span>'}${r.rol ? `<div class="sub">${esc(rolNombre(r.rol))}</div>` : ''}</td>
+            <td>${r.usuario_id ? esc(nom[r.usuario_id] || 'Usuario #' + r.usuario_id) : r.paciente_id ? `<a href="#/expediente/${r.paciente_id}">Paciente #${r.paciente_id}</a>` : '<span class="sub">Sin sesión</span>'}${r.rol ? `<div class="sub">${r.rol === 'paciente' ? 'Portal de pacientes' : esc(rolNombre(r.rol))}</div>` : ''}</td>
             <td><span class="badge ${cls}">${acc}</span></td>
             <td>${esc(QUE(r))}<div class="sub">${esc(r.metodo)} ${esc(r.ruta)}</div></td>
             <td>${ok ? '<span class="badge b-green">Correcto</span>' : `<span class="badge b-red">Error ${r.status}</span>`}</td></tr>`;

@@ -12,7 +12,8 @@ function bitacora(req, res, next) {
     if (!mongoListo()) return;
     Bitacora.create({
       usuario_id: req.usuario ? req.usuario.id : null,
-      rol: req.usuario ? req.usuario.rol : null,
+      rol: req.usuario ? req.usuario.rol : req.paciente ? 'paciente' : null,
+      paciente_id: req.paciente ? req.paciente.id : null,
       metodo: req.method,
       ruta: req.originalUrl.split('?')[0],
       status: res.statusCode,

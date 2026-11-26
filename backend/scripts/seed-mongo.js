@@ -27,17 +27,19 @@ const haceMin = (m) => new Date(Date.now() - m * 60 * 1000);
 
     const dr = { tipo: 'usuario', id: med.id, nombre: `${med.nombres} ${med.apellidos}` };
     const pac = (p) => ({ tipo: 'paciente', id: p.id, nombre: `${p.nombres} ${p.apellidos}` });
+    // leido = lo leyó la clínica · leido_paciente = lo leyó el paciente
     const [a, b, c, d] = pacs;
 
     const mensajes = [
-      { paciente_id: a.id, autor: pac(a), texto: 'Buenos días doctor, ¿puedo tomar el medicamento con el estómago vacío?', creado_en: haceMin(300), leido: true },
-      { paciente_id: a.id, autor: dr, texto: 'Buenos días. Mejor tómelo después del desayuno.', creado_en: haceMin(290), leido: true },
-      { paciente_id: b.id, autor: pac(b), texto: 'Doctor, la presión me salió 145/90 esta mañana.', creado_en: haceMin(95), area: 'Clinica' },
-      { paciente_id: c.id, autor: pac(c), texto: 'Ya me hice los exámenes que me pidió.', creado_en: haceMin(41), area: 'Laboratorio',
+      { paciente_id: a.id, autor: pac(a), texto: 'Buenos días doctor, ¿puedo tomar el medicamento con el estómago vacío?', creado_en: haceMin(300), leido: true, leido_paciente: true },
+      { paciente_id: a.id, autor: dr, texto: 'Buenos días. Mejor tómelo después del desayuno.', creado_en: haceMin(290), leido: true, leido_paciente: true },
+      { paciente_id: b.id, autor: pac(b), texto: 'Doctor, la presión me salió 145/90 esta mañana.', creado_en: haceMin(95), area: 'Clinica', leido_paciente: true },
+      { paciente_id: b.id, autor: dr, texto: 'Gracias por avisar. Siga con el Losartán y mídase otra vez en la noche. Si pasa de 160/100 venga a la clínica.', creado_en: haceMin(60), leido: true },
+      { paciente_id: c.id, autor: pac(c), texto: 'Ya me hice los exámenes que me pidió.', creado_en: haceMin(41), area: 'Laboratorio', leido_paciente: true,
         adjunto: { nombre: 'hemograma.pdf', url: null, tamano_kb: 245 } },
-      { paciente_id: c.id, autor: dr, texto: 'Gracias, ya los recibí. Están dentro de lo normal. Nos vemos el martes.', creado_en: haceMin(20), leido: true },
+      { paciente_id: c.id, autor: dr, texto: 'Gracias, ya los recibí. Están dentro de lo normal. Nos vemos el martes.', creado_en: haceMin(20), leido: true, leido_paciente: true },
     ];
-    if (d) mensajes.push({ paciente_id: d.id, autor: pac(d), texto: '¿Tienen espacio para mañana en la tarde?', creado_en: haceMin(8), area: 'Recepcion' });
+    if (d) mensajes.push({ paciente_id: d.id, autor: pac(d), texto: '¿Tienen espacio para mañana en la tarde?', creado_en: haceMin(8), area: 'Recepcion', leido_paciente: true });
 
     const notifs = usuarios.flatMap((u) => [
       { usuario_id: u.id, tipo: 'Mensaje', titulo: `Nuevo mensaje de ${b.nombres} ${b.apellidos}`, descripcion: 'La presión me salió 145/90 esta mañana.', datos: { paciente_id: b.id }, creado_en: haceMin(95) },

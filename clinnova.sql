@@ -98,6 +98,10 @@ CREATE TABLE pacientes (
   contacto_emerg_nombre   VARCHAR(120),
   contacto_emerg_telefono VARCHAR(30),
   activo               TINYINT(1)    NOT NULL DEFAULT 1,
+  -- Portal de pacientes: acceso con su correo y contraseña
+  portal_activo        TINYINT(1)    NOT NULL DEFAULT 0,
+  password_hash        VARCHAR(255),
+  portal_ultimo_acceso DATETIME,
   creado_en            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_pac_clinica FOREIGN KEY (clinica_id) REFERENCES clinicas(id)
 ) ENGINE=InnoDB;
@@ -396,6 +400,11 @@ INSERT INTO inventario (clinica_id, nombre, tipo, existencia, stock_minimo, venc
   (1,'Amoxicilina 500mg','Medicamento',120,30,'2027-05-01','DistriFarma'),
   (1,'Guantes de látex (caja)','Material',8,10,NULL,'MediSupply'),
   (1,'Alcohol 70% 1L','Insumo',40,15,'2028-01-01','MediSupply');
+
+-- Portal de pacientes de ejemplo: María López entra con maria.lopez@correo.hn / 123456
+UPDATE pacientes SET email = 'maria.lopez@correo.hn', portal_activo = 1,
+  password_hash = '$2a$10$o3W/PzwOJIGH5lmiqfzhj.0wxLRu1zq6TOvMhjX2Qq2f8SO.YKERW'
+ WHERE id = 2;
 
 -- Historial de ejemplo: consultas, recetas y signos vitales de días anteriores
 INSERT INTO consultas (id, paciente_id, medico_id, fecha, motivo, historia, exploracion, diagnostico, cie10, tratamiento, indicaciones) VALUES

@@ -48,14 +48,16 @@ app.get('/api/health', async (_req, res) => {
 const path = require('path');
 const RAIZ = path.join(__dirname, '..');
 app.get('/', (_req, res) => res.redirect('/login.html'));
-app.get(['/login.html', '/Clinnova.html'], (req, res) => res.sendFile(path.join(RAIZ, req.path)));
+app.get(['/login.html', '/Clinnova.html', '/portal.html'], (req, res) => res.sendFile(path.join(RAIZ, req.path)));
 app.use('/img', express.static(path.join(RAIZ, 'img')));
 app.use('/panel', express.static(path.join(RAIZ, 'panel')));
+app.use('/portal', express.static(path.join(RAIZ, 'portal')));
 app.use('/app-movil', express.static(path.join(RAIZ, 'app-movil')));
 
 // --- Rutas de la API ---
 // /api/auth es pública (login). Todas las demás exigen haber iniciado sesión.
 app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/portal',     require('./routes/portal')); // portal de pacientes: usa su propio token
 app.use('/api/pacientes',  requireAuth, require('./routes/pacientes'));
 app.use('/api/citas',      requireAuth, require('./routes/citas'));
 app.use('/api/dashboard',  requireAuth, require('./routes/dashboard'));
@@ -79,6 +81,7 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 4000;
+require('./migraciones').migrar().catch((e) => console.error('  ✘ Migraciones:', pool.explicarErrorMySQL(e)));
 conectarMongo(); // no bloquea: si MongoDB no está, la API arranca igual con MySQL
 app.listen(PORT, () => {
   console.log('==============================================');

@@ -6,6 +6,7 @@ const bitacoraSchema = new Schema({
   fecha:      { type: Date, default: Date.now, index: true },
   usuario_id: { type: Number, default: null, index: true },
   rol:        { type: String, default: null },
+  paciente_id: { type: Number, default: null, index: true }, // acciones hechas desde el portal de pacientes
   metodo:     { type: String, required: true },
   ruta:       { type: String, required: true },
   status:     { type: Number, required: true },

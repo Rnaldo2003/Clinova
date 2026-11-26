@@ -1,5 +1,6 @@
 // Rutas de PACIENTES  ->  /api/pacientes
 const router = require('express').Router();
+const bcrypt = require('bcryptjs');
 const pool = require('../db');
 
 // Listar pacientes (con búsqueda opcional ?q=texto)
@@ -25,7 +26,42 @@ router.get('/:id', async (req, res, next) => {
     const [rows] = await pool.query(
       'SELECT *, TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) AS edad FROM pacientes WHERE id = ?', [req.params.id]);
     if (!rows.length) return res.status(404).json({ error: 'Paciente no encontrado' });
-    res.json(rows[0]);
+    const { password_hash, ...paciente } = rows[0]; // la contraseña del portal nunca sale de la API
+    paciente.portal_tiene_password = Boolean(password_hash);
+    res.json(paciente);
+  } catch (e) { next(e); }
+});
+
+// Activar o actualizar el acceso al PORTAL DE PACIENTES. Body: { email, password }
+router.post('/:id/portal', async (req, res, next) => {
+  try {
+    if (!['admin', 'superadmin', 'recepcion', 'medico'].includes(req.usuario.rol)) {
+      return res.status(403).json({ error: 'No tienes permiso para dar acceso al portal' });
+    }
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const { password } = req.body;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Escribe un correo válido' });
+    if (!password || String(password).length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const [[otro]] = await pool.query(
+      'SELECT id FROM pacientes WHERE LOWER(email) = ? AND portal_activo = 1 AND id <> ?', [email, req.params.id]);
+    if (otro) return res.status(409).json({ error: 'Otro paciente ya usa ese correo en el portal' });
+    const hash = await bcrypt.hash(String(password), 10);
+    const [r] = await pool.query(
+      'UPDATE pacientes SET email = ?, password_hash = ?, portal_activo = 1 WHERE id = ? AND activo = 1', [email, hash, req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Paciente no encontrado' });
+    res.json({ mensaje: 'Acceso al portal activado' });
+  } catch (e) { next(e); }
+});
+
+// Quitar el acceso al portal
+router.delete('/:id/portal', async (req, res, next) => {
+  try {
+    if (!['admin', 'superadmin', 'recepcion', 'medico'].includes(req.usuario.rol)) {
+      return res.status(403).json({ error: 'No tienes permiso para quitar el acceso al portal' });
+    }
+    const [r] = await pool.query('UPDATE pacientes SET portal_activo = 0 WHERE id = ?', [req.params.id]);
+    if (!r.affectedRows) return res.status(404).json({ error: 'Paciente no encontrado' });
+    res.json({ mensaje: 'Acceso al portal desactivado' });
   } catch (e) { next(e); }
 });
 

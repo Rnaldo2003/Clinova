@@ -5,7 +5,7 @@ Backend REST para el sistema **Clinnova**. Usa dos bases de datos:
 | Base | Qué guarda | Por qué |
 |---|---|---|
 | **MySQL** (`clinnova`) | Usuarios, pacientes, citas, consultas, recetas, inventario | Datos estructurados con relaciones e integridad |
-| **MongoDB** (`clinnova`) | `mensajes`, `notificaciones`, `bitacora` | Datos flexibles o de mucho volumen, sin relaciones complejas |
+| **MongoDB** (`clinnova`) | `mensajes`, `notificaciones`, `bitacora`, `recuperaciones` | Datos flexibles o de mucho volumen, sin relaciones complejas |
 
 Si MongoDB no está corriendo, la API arranca igual: todo lo de MySQL funciona y las rutas de MongoDB responden **503**. Cuando MongoDB vuelve, se reconecta solo.
 
@@ -79,6 +79,29 @@ Debe responder: `{ "api": "ok", "db": "conectada", "mongo": "conectada" }`
 | GET  | `/api/recetas/:id` | Receta con medicamentos y datos para imprimir |
 | POST | `/api/recetas` | Crear. Body: `paciente_id`, `consulta_id?`, `notas?`, `items: [{medicamento, dosis, frecuencia, duracion, indicaciones}]` |
 | DELETE | `/api/recetas/:id` | Anular (solo quien la hizo o admin) |
+
+### Recuperar contraseña (público)
+
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| POST | `/api/auth/recuperar` | Body: `email`, `tipo` (`personal` o `paciente`). Envía un enlace que vence en 30 min |
+| POST | `/api/auth/restablecer` | Body: `token`, `nueva` |
+
+### Portal de pacientes (token de paciente)
+
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| POST | `/api/portal/login` | Entrar con correo y contraseña del paciente |
+| GET · PUT | `/api/portal/yo` | Mis datos / actualizar contacto |
+| PATCH | `/api/portal/password` | Cambiar mi contraseña |
+| GET | `/api/portal/resumen` | Próxima cita, recetas y mensajes sin leer |
+| GET · POST | `/api/portal/citas` | Mis citas / solicitar (queda "Pendiente") |
+| PATCH | `/api/portal/citas/:id/cancelar` | Cancelar una cita mía |
+| GET | `/api/portal/medicos`, `/api/portal/disponibilidad?medico_id=&fecha=` | Médicos y horarios libres |
+| GET | `/api/portal/recetas`, `/api/portal/recetas/:id`, `/api/portal/consultas` | Mis recetas y consultas |
+| GET · POST | `/api/portal/mensajes` | Mi conversación con la clínica / enviar |
+
+Para el personal: `POST /api/pacientes/:id/portal` (`email`, `password`) da acceso y `DELETE /api/pacientes/:id/portal` lo quita.
 
 ### Usuarios (solo admin)
 
@@ -165,6 +188,7 @@ backend/
     ├── recetas.js
     ├── usuarios.js       # solo admin
     ├── catalogos.js      # listas para formularios
+    ├── portal.js         # portal de pacientes
     ├── mensajes.js       # MongoDB
     ├── notificaciones.js # MongoDB
     └── bitacora.js       # MongoDB

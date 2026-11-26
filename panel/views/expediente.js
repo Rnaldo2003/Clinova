@@ -1,5 +1,37 @@
 /* Expediente: ficha completa del paciente con su historial */
 
+// Dar o quitar acceso al PORTAL DE PACIENTES
+C.formPortal = function (p, alGuardar) {
+  const activo = Boolean(p.portal_activo);
+  const m = C.formulario({
+    titulo: activo ? 'Portal del paciente · activo' : 'Dar acceso al portal de pacientes',
+    valores: { email: p.email || '' },
+    campos: [
+      { n: 'email', l: 'Correo del paciente', t: 'email', req: true, full: true, hint: 'Con este correo entrará al portal' },
+      { n: 'password', l: activo ? 'Nueva contraseña' : 'Contraseña inicial', t: 'text', req: true, full: true, hint: 'Mínimo 6 caracteres. Entrégasela al paciente; luego él puede cambiarla.' },
+    ],
+    textoBoton: activo ? 'Guardar' : 'Activar acceso',
+    alAbrir(mm) {
+      const pie = mm.el.querySelector('.mb');
+      pie.insertAdjacentHTML('afterbegin', `<p class="sub" style="margin:0 0 12px">En el portal (<b>portal.html</b>) el paciente ve sus citas y recetas, solicita citas y le escribe a la clínica por Mensajes.</p>`);
+      if (activo) {
+        const mf = mm.el.querySelector('.mf');
+        mf.insertAdjacentHTML('afterbegin', `<button class="btn dan" data-quitar style="margin-right:auto">Quitar acceso</button>`);
+        mf.querySelector('[data-quitar]').addEventListener('click', async () => {
+          try { await C.api(`/pacientes/${p.id}/portal`, { method: 'DELETE' }); C.aviso('Acceso al portal desactivado'); mm.cerrar(); if (alGuardar) alGuardar(); }
+          catch (e) { C.fallo(e); }
+        });
+      }
+    },
+    async guardar(d) {
+      await C.api(`/pacientes/${p.id}/portal`, { method: 'POST', body: d });
+      C.aviso(activo ? 'Acceso actualizado' : `Acceso activado: ${d.email}`);
+      if (alGuardar) alGuardar();
+    },
+  });
+  return m;
+};
+
 // Formulario de signos vitales (lo usa también la Agenda)
 C.formSignos = function ({ pacienteId, citaId, nombre, alGuardar }) {
   C.formulario({
@@ -101,6 +133,7 @@ C.vista('expediente', {
             ${C.permisos.signos() ? `<button class="btn" id="bSignos">${icono('i-heart')}Signos</button>` : ''}
             <a class="btn" href="#/agenda/nueva/${p.id}">${icono('i-cal')}Cita</a>
             <a class="btn" href="#/mensajes/${p.id}">${icono('i-msg')}Mensaje</a>
+            <button class="btn" id="bPortal" title="Acceso del paciente al portal">${icono('i-lock')}${p.portal_activo ? 'Portal activo' : 'Dar acceso al portal'}</button>
             <button class="ibtn" id="bEdit" title="Editar datos">${icono('i-edit')}</button>
           </div>
         </div>
@@ -109,7 +142,7 @@ C.vista('expediente', {
           <div><span>Teléfono</span><b>${esc(p.telefono || '—')}</b></div>
           <div><span>Fecha de nacimiento</span><b>${p.fecha_nacimiento ? fecha(p.fecha_nacimiento) : '—'}</b></div>
           <div><span>Identidad</span><b>${esc(p.identidad || '—')}</b></div>
-          <div><span>Correo</span><b>${esc(p.email || '—')}</b></div>
+          <div><span>Correo</span><b>${esc(p.email || '—')}</b>${p.portal_activo ? '<div class="sub" style="color:var(--good)">Con acceso al portal</div>' : ''}</div>
           <div><span>Antecedentes</span><b>${esc(p.antecedentes || 'Ninguno registrado')}</b></div>
           <div><span>Dirección</span><b>${esc(p.direccion || '—')}</b></div>
           <div><span>Contacto de emergencia</span><b>${esc(p.contacto_emerg_nombre || '—')}${p.contacto_emerg_telefono ? ' · ' + esc(p.contacto_emerg_telefono) : ''}</b></div>
@@ -129,6 +162,7 @@ C.vista('expediente', {
     C.$('.tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { pestana = b.dataset.t; pintarPestana(); } });
     C.$('#tab').addEventListener('click', (e) => { const b = e.target.closest('[data-print]'); if (b) C.imprimirReceta(b.dataset.print); });
     C.$('#bEdit').addEventListener('click', () => C.formPaciente(p, C.recargar));
+    C.$('#bPortal').addEventListener('click', () => C.formPortal(p, C.recargar));
     const bs = C.$('#bSignos');
     if (bs) bs.addEventListener('click', () => C.formSignos({ pacienteId: p.id, nombre, alGuardar: C.recargar }));
     pintarPestana();

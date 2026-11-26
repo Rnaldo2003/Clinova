@@ -43,10 +43,11 @@ C.vista('mensajes', {
         ultimoDia = dia;
         const mio = m.autor.tipo === 'usuario';
         const puedoBorrar = (mio && m.autor.id === C.yo.id) || C.permisos.admin();
+        const visto = mio && p.portal_activo && m.leido_paciente ? ' · Visto' : '';
         return `${sep}<div class="bub ${mio ? 'out' : 'in'}" ${puedoBorrar ? `data-m="${m._id}" title="Doble clic para borrar"` : ''}>
           ${mio ? `<div class="who">${esc(m.autor.nombre)}</div>` : ''}${esc(m.texto)}
           ${m.adjunto && m.adjunto.nombre ? `<div class="att">${icono('i-file')}${esc(m.adjunto.nombre)}${m.adjunto.tamano_kb ? ` · ${m.adjunto.tamano_kb} KB` : ''}</div>` : ''}
-          <time>${hora(m.creado_en)}${m.area ? ' · ' + esc(m.area) : ''}</time></div>`;
+          <time>${hora(m.creado_en)}${m.area ? ' · ' + esc(m.area) : ''}${visto}</time></div>`;
       }).join('');
       C.$('#thread').innerHTML = `
         <div class="thead">${avatar(nombre)}<div><b>${esc(nombre)}</b><span class="sub">${esc(p.expediente_no || '')} · ${esc(p.telefono || 'sin teléfono')}</span></div>
@@ -54,6 +55,9 @@ C.vista('mensajes', {
             <button class="btn sm" id="entrante" title="Registrar un mensaje que el paciente envió por teléfono, WhatsApp o en persona">${icono('i-swap')}Registrar mensaje del paciente</button>
             <a class="ibtn" href="#/expediente/${p.id}" title="Expediente">${icono('i-file')}</a>
           </div></div>
+        <div class="sub" style="padding:7px 16px;border-bottom:1px solid var(--line);background:${p.portal_activo ? 'var(--good-soft)' : 'var(--warn-soft)'}">
+          ${p.portal_activo ? `${icono('i-check', 'style="width:14px;height:14px;vertical-align:-2px"')} ${esc(p.nombres)} tiene portal: verá tus respuestas y puede escribir desde ahí.`
+            : `${esc(p.nombres)} no tiene acceso al portal, así que no verá estos mensajes. <a href="#/expediente/${p.id}">Darle acceso</a>`}</div>
         <div class="bubbles" id="bubs">${burbujas || vacio('Sin mensajes todavía', 'Escribe el primero abajo.', 'i-msg')}</div>
         <form class="compose" id="compose">
           <textarea class="inp" id="texto" placeholder="Escribe un mensaje para ${esc(p.nombres)}… (Enter para enviar, Shift+Enter para salto de línea)" maxlength="2000"></textarea>

@@ -3,7 +3,14 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db');
+const crypto = require('crypto');
 const { requireAuth, requireRol, JWT_SECRET } = require('../middleware/auth');
+const Recuperacion = require('../models/Recuperacion');
+const { mongoListo } = require('../mongo');
+const { enviarCorreo } = require('../services/correo');
+
+const APP_URL = () => (process.env.APP_URL || `http://localhost:${process.env.PORT || 4000}`).replace(/\/$/, '');
+const MINUTOS_ENLACE = 30;
 
 // Iniciar sesión (pública).  Body: { email, password }  ->  devuelve un token
 router.post('/login', async (req, res, next) => {
@@ -97,6 +104,67 @@ router.post('/register', requireAuth, requireRol('admin', 'superadmin'), async (
     if (e.code === 'ER_NO_REFERENCED_ROW_2') return res.status(400).json({ error: 'rol_id, especialidad_id o sede_id no existe' });
     next(e);
   }
+});
+
+// ============================================================
+//  Recuperar contraseña (personal y pacientes)
+//  1) POST /recuperar   { email, tipo: 'personal' | 'paciente' }
+//     Si el correo existe, envía un enlace que vence en 30 minutos.
+//     Siempre responde lo mismo, para no revelar qué correos existen.
+//  2) POST /restablecer { token, nueva }
+// ============================================================
+router.post('/recuperar', async (req, res, next) => {
+  try {
+    if (!mongoListo()) return res.status(503).json({ error: 'El servicio no está disponible. Intenta más tarde.' });
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const esPaciente = req.body.tipo === 'paciente';
+    const respuesta = { mensaje: 'Si el correo está registrado, te enviamos un enlace para crear una nueva contraseña.' };
+    if (!email) return res.status(400).json({ error: 'Escribe tu correo' });
+
+    const [rows] = esPaciente
+      ? await pool.query('SELECT id, nombres FROM pacientes WHERE LOWER(email) = ? AND activo = 1 AND portal_activo = 1', [email])
+      : await pool.query('SELECT id, nombres FROM usuarios WHERE LOWER(email) = ? AND activo = 1', [email]);
+    if (!rows.length) return res.json(respuesta);
+
+    const token = crypto.randomBytes(32).toString('hex');
+    await Recuperacion.create({
+      tipo: esPaciente ? 'paciente' : 'usuario',
+      ref_id: rows[0].id,
+      token_hash: crypto.createHash('sha256').update(token).digest('hex'),
+      expira: new Date(Date.now() + MINUTOS_ENLACE * 60 * 1000),
+    });
+    const enlace = `${APP_URL()}/${esPaciente ? 'portal.html' : 'login.html'}?reset=${token}`;
+    await enviarCorreo({
+      para: email,
+      asunto: 'Clinnova · Restablecer tu contraseña',
+      texto: `Hola ${rows[0].nombres}:\n\nPara crear una nueva contraseña abre este enlace (vence en ${MINUTOS_ENLACE} minutos):\n${enlace}\n\nSi no lo pediste, ignora este correo.`,
+      html: `<p>Hola ${rows[0].nombres}:</p><p>Para crear una nueva contraseña haz clic aquí (vence en ${MINUTOS_ENLACE} minutos):</p>
+             <p><a href="${enlace}" style="background:#0f72b8;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Crear nueva contraseña</a></p>
+             <p style="color:#888">Si no lo pediste, ignora este correo.</p>`,
+    });
+    res.json(respuesta);
+  } catch (e) { next(e); }
+});
+
+router.post('/restablecer', async (req, res, next) => {
+  try {
+    if (!mongoListo()) return res.status(503).json({ error: 'El servicio no está disponible. Intenta más tarde.' });
+    const { token, nueva } = req.body;
+    if (!token || typeof token !== 'string') return res.status(400).json({ error: 'Enlace inválido' });
+    if (!nueva || String(nueva).length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    const rec = await Recuperacion.findOne({
+      token_hash: crypto.createHash('sha256').update(token).digest('hex'),
+      usado: false,
+      expira: { $gt: new Date() },
+    });
+    if (!rec) return res.status(400).json({ error: 'El enlace no es válido o ya venció. Pide uno nuevo.' });
+    const hash = await bcrypt.hash(String(nueva), 10);
+    const tabla = rec.tipo === 'paciente' ? 'pacientes' : 'usuarios';
+    await pool.query(`UPDATE ${tabla} SET password_hash = ? WHERE id = ?`, [hash, rec.ref_id]);
+    rec.usado = true;
+    await rec.save();
+    res.json({ mensaje: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
+  } catch (e) { next(e); }
 });
 
 module.exports = router;
