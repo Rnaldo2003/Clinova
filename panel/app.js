@@ -330,7 +330,7 @@ const C = (() => {
     });
     $('#nlist').addEventListener('click', async (e) => {
       const it = e.target.closest('.nitem'); if (!it) return;
-      if (it.classList.contains('unread')) api(`/notificaciones/${it.dataset.id}/leida`, { method: 'PATCH' }).then(contadores).catch(() => {});
+      if (it.classList.contains('nueva')) api(`/notificaciones/${it.dataset.id}/leida`, { method: 'PATCH' }).then(contadores).catch(() => {});
       $('#nwrap').classList.remove('open');
       if (it.dataset.go) location.hash = it.dataset.go;
     });
@@ -352,7 +352,7 @@ const C = (() => {
       const lista = await api('/notificaciones?limite=30');
       box.innerHTML = lista.map((n) => {
         const [ic, col] = ICONO_NOTI[n.tipo] || ['i-bell', 'i-blue'];
-        return `<div class="nitem ${n.leida ? '' : 'unread'}" data-id="${n._id}" data-go="${destinoNoti(n)}">
+        return `<div class="nitem ${n.leida ? '' : 'nueva'}" data-id="${n._id}" data-go="${destinoNoti(n)}">
           <div class="ni ${col}">${icono(ic)}</div>
           <div><b>${esc(n.titulo)}</b><p>${esc(n.descripcion || '')}</p><time>${hace(n.creado_en)}</time></div></div>`;
       }).join('') || vacio('Sin notificaciones', '', 'i-bell');

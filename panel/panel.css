@@ -178,7 +178,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .npanel .nl{overflow-y:auto}
 .nitem{display:flex;gap:11px;padding:12px 15px;border-bottom:1px solid var(--line-2);cursor:pointer}
 .nitem:hover{background:var(--surface-2)}
-.nitem.unread{background:#f5faff}
+.nitem.nueva{background:#f5faff}
 .nitem .ni{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none}
 .nitem .ni .ic{width:17px;height:17px}
 .nitem b{font-size:13px;display:block}
