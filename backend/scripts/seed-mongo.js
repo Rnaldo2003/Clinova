@@ -52,7 +52,7 @@ const haceMin = (m) => new Date(Date.now() - m * 60 * 1000);
     await Notificacion.insertMany(notifs, { timestamps: false });
     console.log(`✔ ${mensajes.length} mensajes y ${notifs.length} notificaciones de ejemplo cargados en MongoDB.`);
   } catch (e) {
-    console.error('✘ Error:', e.message);
+    console.error('✘ Error:', pool.explicarErrorMySQL(e));
     process.exitCode = 1;
   } finally {
     await mongoose.disconnect();

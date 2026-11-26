@@ -39,7 +39,7 @@ app.get('/api/health', async (_req, res) => {
       mongo: mongoListo() ? 'conectada' : 'desconectada',
     });
   } catch (err) {
-    res.status(500).json({ api: 'ok', db: 'error', mongo: mongoListo() ? 'conectada' : 'desconectada', detalle: err.message });
+    res.status(500).json({ api: 'ok', db: 'error', mongo: mongoListo() ? 'conectada' : 'desconectada', detalle: pool.explicarErrorMySQL(err) });
   }
 });
 
@@ -75,7 +75,7 @@ app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada: ' + req
 // --- Manejo de errores ---
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(500).json({ error: 'Error interno', detalle: err.message });
+  res.status(500).json({ error: 'Error interno', detalle: pool.explicarErrorMySQL(err) });
 });
 
 const PORT = process.env.PORT || 4000;

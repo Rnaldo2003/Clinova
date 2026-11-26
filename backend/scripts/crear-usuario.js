@@ -39,7 +39,7 @@ const pool = require('../db');
       console.log(`✔ Usuario ${email} creado (rol: ${rol}). Ya puedes iniciar sesión.`);
     }
   } catch (e) {
-    console.error('✘ Error:', e.message);
+    console.error('✘ Error:', pool.explicarErrorMySQL(e));
     process.exitCode = 1;
   } finally {
     await pool.end();
